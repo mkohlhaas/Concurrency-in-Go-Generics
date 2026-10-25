@@ -8,7 +8,7 @@ import (
 func main() {
 	var numCalcsCreated int
 	calcPool := &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			numCalcsCreated += 1
 			mem := make([]byte, 1024)
 			return &mem

@@ -6,8 +6,8 @@ import (
 )
 
 func main() {
-	doWork := func(done <-chan interface{}) (<-chan interface{}, <-chan int) {
-		heartbeatStream := make(chan interface{}, 1)
+	doWork := func(done <-chan struct{}) (<-chan struct{}, <-chan int) {
+		heartbeatStream := make(chan struct{}, 1)
 		workStream := make(chan int)
 		go func() {
 			defer close(heartbeatStream)
@@ -30,7 +30,7 @@ func main() {
 		return heartbeatStream, workStream
 	}
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	heartbeat, results := doWork(done)

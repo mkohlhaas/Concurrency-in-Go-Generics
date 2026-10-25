@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-	var or func(channels ...<-chan interface{}) <-chan interface{}
-	or = func(channels ...<-chan interface{}) <-chan interface{} {
+	var or func(channels ...<-chan struct{}) <-chan struct{}
+	or = func(channels ...<-chan struct{}) <-chan struct{} {
 		switch len(channels) {
 		case 0:
 			return nil
@@ -17,7 +17,7 @@ func main() {
 			return channels[0]
 		}
 
-		orDone := make(chan interface{})
+		orDone := make(chan struct{})
 		go func() {
 			defer close(orDone)
 
@@ -39,26 +39,26 @@ func main() {
 		return orDone
 	}
 	type startGoroutineFn func(
-		done <-chan interface{},
+		done <-chan struct{},
 		pulseInterval time.Duration,
-	) (heartbeat <-chan interface{})
+	) (heartbeat <-chan struct{})
 
 	newSteward := func(
 		timeout time.Duration,
 		startGoroutine startGoroutineFn,
 	) startGoroutineFn {
 		return func(
-			done <-chan interface{},
+			done <-chan struct{},
 			pulseInterval time.Duration,
-		) <-chan interface{} {
-			heartbeat := make(chan interface{})
+		) <-chan struct{} {
+			heartbeat := make(chan struct{})
 			go func() {
 				defer close(heartbeat)
 
-				var wardDone chan interface{}
-				var wardHeartbeat <-chan interface{}
+				var wardDone chan struct{}
+				var wardHeartbeat <-chan struct{}
 				startWard := func() {
-					wardDone = make(chan interface{})
+					wardDone = make(chan struct{})
 					wardHeartbeat = startGoroutine(or(wardDone, done), timeout/2)
 				}
 				startWard()
@@ -93,11 +93,11 @@ func main() {
 		}
 	}
 	take := func(
-		done <-chan interface{},
-		valueStream <-chan interface{},
+		done <-chan struct{},
+		valueStream <-chan struct{},
 		num int,
-	) <-chan interface{} {
-		takeStream := make(chan interface{})
+	) <-chan struct{} {
+		takeStream := make(chan struct{})
 		go func() {
 			defer close(takeStream)
 			for i := 0; i < num; i++ {
@@ -111,14 +111,14 @@ func main() {
 		return takeStream
 	}
 	//bridge := func(
-	//    done <-chan interface{},
-	//    chanStream <-chan <-chan interface{},
-	//) <-chan interface{} {
-	//    valStream := make(chan interface{})
+	//    done <-chan struct{},
+	//    chanStream <-chan <-chan struct{},
+	//) <-chan struct{} {
+	//    valStream := make(chan struct{})
 	//    go func() {
 	//        defer close(valStream)
 	//        for {
-	//            var stream <-chan interface{}
+	//            var stream <-chan struct{}
 	//            select {
 	//            case maybeStream, ok := <-chanStream:
 	//                if ok == false {
@@ -139,17 +139,17 @@ func main() {
 	//    return valStream
 	//}
 	doWorkFn := func(
-		done <-chan interface{},
+		done <-chan struct{},
 		intList ...int,
-	) (startGoroutineFn, <-chan interface{}) {
-		intChanStream := make(chan (<-chan interface{}))
+	) (startGoroutineFn, <-chan struct{}) {
+		intChanStream := make(chan (<-chan struct{}))
 		intStream := bridge(done, intChanStream)
 		doWork := func(
-			done <-chan interface{},
+			done <-chan struct{},
 			pulseInterval time.Duration,
-		) <-chan interface{} {
-			intStream := make(chan interface{})
-			heartbeat := make(chan interface{})
+		) <-chan struct{} {
+			intStream := make(chan struct{})
+			heartbeat := make(chan struct{})
 			go func() {
 				defer close(intStream)
 				select {
@@ -191,7 +191,7 @@ func main() {
 	log.SetFlags(log.Ltime | log.LUTC)
 	log.SetOutput(os.Stdout)
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	doWork, intStream := doWorkFn(done, 1, 2, -1, 3, 4, 5)

@@ -5,9 +5,9 @@ import (
 )
 
 func main() {
-	c1 := make(chan interface{})
+	c1 := make(chan struct{})
 	close(c1)
-	c2 := make(chan interface{})
+	c2 := make(chan struct{})
 	close(c2)
 
 	var c1Count, c2Count int

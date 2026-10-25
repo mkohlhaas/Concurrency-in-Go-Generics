@@ -7,10 +7,10 @@ import (
 
 func main() {
 	doWork := func(
-		done <-chan interface{},
+		done <-chan struct{},
 		pulseInterval time.Duration,
-	) (<-chan interface{}, <-chan time.Time) {
-		heartbeat := make(chan interface{})
+	) (<-chan struct{}, <-chan time.Time) {
+		heartbeat := make(chan struct{})
 		results := make(chan time.Time)
 		go func() {
 			defer close(heartbeat)
@@ -51,7 +51,7 @@ func main() {
 		}()
 		return heartbeat, results
 	}
-	done := make(chan interface{})
+	done := make(chan struct{})
 	time.AfterFunc(10*time.Second, func() { close(done) })
 
 	const timeout = 2 * time.Second

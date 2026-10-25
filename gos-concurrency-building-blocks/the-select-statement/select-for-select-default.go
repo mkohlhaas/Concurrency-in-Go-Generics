@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	done := make(chan interface{})
+	done := make(chan struct{})
 	go func() {
 		time.Sleep(5 * time.Second)
 		close(done)

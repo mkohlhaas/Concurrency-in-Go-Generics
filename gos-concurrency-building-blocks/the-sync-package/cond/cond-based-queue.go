@@ -8,7 +8,7 @@ import (
 
 func main() {
 	c := sync.NewCond(&sync.Mutex{})
-	queue := make([]interface{}, 0, 10)
+	queue := make([]any, 0, 10)
 
 	removeFromQueue := func(delay time.Duration) {
 		time.Sleep(delay)

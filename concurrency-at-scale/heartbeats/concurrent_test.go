@@ -6,10 +6,10 @@ import (
 )
 
 func DoWork(
-	done <-chan interface{},
+	done <-chan struct{},
 	nums ...int,
-) (<-chan interface{}, <-chan int) {
-	heartbeat := make(chan interface{}, 1)
+) (<-chan struct{}, <-chan int) {
+	heartbeat := make(chan struct{}, 1)
 	intStream := make(chan int)
 	go func() {
 		defer close(heartbeat)
@@ -35,7 +35,7 @@ func DoWork(
 }
 
 func TestDoWork_GeneratesAllNumbers(t *testing.T) {
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	intSlice := []int{0, 1, 2, 3, 5}

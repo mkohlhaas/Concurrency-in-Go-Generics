@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	var or func(channels ...<-chan interface{}) <-chan interface{}
-	or = func(channels ...<-chan interface{}) <-chan interface{} {
+	var or func(channels ...<-chan struct{}) <-chan struct{}
+	or = func(channels ...<-chan struct{}) <-chan struct{} {
 		switch len(channels) {
 		case 0:
 			return nil
@@ -16,7 +16,7 @@ func main() {
 			return channels[0]
 		}
 
-		orDone := make(chan interface{})
+		orDone := make(chan struct{})
 		go func() {
 			defer close(orDone)
 
@@ -38,26 +38,26 @@ func main() {
 		return orDone
 	}
 	type startGoroutineFn func(
-		done <-chan interface{},
+		done <-chan struct{},
 		pulseInterval time.Duration,
-	) (heartbeat <-chan interface{})
+	) (heartbeat <-chan struct{})
 
 	newSteward := func(
 		timeout time.Duration,
 		startGoroutine startGoroutineFn,
 	) startGoroutineFn {
 		return func(
-			done <-chan interface{},
+			done <-chan struct{},
 			pulseInterval time.Duration,
-		) <-chan interface{} {
-			heartbeat := make(chan interface{})
+		) <-chan struct{} {
+			heartbeat := make(chan struct{})
 			go func() {
 				defer close(heartbeat)
 
-				var wardDone chan interface{}
-				var wardHeartbeat <-chan interface{}
+				var wardDone chan struct{}
+				var wardHeartbeat <-chan struct{}
 				startWard := func() {
-					wardDone = make(chan interface{})
+					wardDone = make(chan struct{})
 					wardHeartbeat = startGoroutine(or(wardDone, done), timeout/2)
 				}
 				startWard()
@@ -94,7 +94,7 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Ltime | log.LUTC)
 
-	doWork := func(done <-chan interface{}, _ time.Duration) <-chan interface{} {
+	doWork := func(done <-chan struct{}, _ time.Duration) <-chan struct{} {
 		log.Println("ward: Hello, I'm irresponsible!")
 		go func() {
 			<-done
@@ -104,7 +104,7 @@ func main() {
 	}
 	doWorkWithSteward := newSteward(4*time.Second, doWork)
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	time.AfterFunc(9*time.Second, func() {
 		log.Println("main: halting steward and ward.")
 		close(done)

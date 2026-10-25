@@ -36,7 +36,7 @@ func or(channels ...<-chan struct{}) <-chan struct{} {
 }
 
 func main() {
-	sig := func(after time.Duration) <-chan struct{} { // <1>
+	sig := func(after time.Duration) <-chan struct{} {
 		c := make(chan struct{})
 		go func() {
 			defer close(c)
@@ -45,7 +45,7 @@ func main() {
 		return c
 	}
 
-	start := time.Now() // <2>
+	start := time.Now()
 	<-or(
 		sig(2*time.Hour),
 		sig(5*time.Minute),
@@ -53,5 +53,5 @@ func main() {
 		sig(1*time.Hour),
 		sig(1*time.Minute),
 	)
-	fmt.Printf("done after %v", time.Since(start)) // <3>
+	fmt.Printf("done after %v", time.Since(start))
 }

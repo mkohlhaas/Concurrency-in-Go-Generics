@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	generator := func(done <-chan interface{}, integers ...int) <-chan int {
+	generator := func(done <-chan struct{}, integers ...int) <-chan int {
 		intStream := make(chan int)
 		go func() {
 			defer close(intStream)
@@ -21,7 +21,7 @@ func main() {
 	}
 
 	multiply := func(
-		done <-chan interface{},
+		done <-chan struct{},
 		intStream <-chan int,
 		multiplier int,
 	) <-chan int {
@@ -40,7 +40,7 @@ func main() {
 	}
 
 	add := func(
-		done <-chan interface{},
+		done <-chan struct{},
 		intStream <-chan int,
 		additive int,
 	) <-chan int {
@@ -58,7 +58,7 @@ func main() {
 		return addedStream
 	}
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	intStream := generator(done, 1, 2, 3, 4)

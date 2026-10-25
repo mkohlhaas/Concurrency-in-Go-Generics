@@ -1,13 +1,16 @@
 package pipelines
 
-import ()
+import (
+	"fmt"
+	"testing"
+)
 
 func BenchmarkGeneric(b *testing.B) {
-	repeat := func(
-		done <-chan interface{},
-		values ...interface{},
-	) <-chan interface{} {
-		valueStream := make(chan interface{})
+	repeat := func[T any](
+		done <-chan struct{},
+		values ...T,
+	) <-chan T {
+		valueStream := make(chan T)
 		go func() {
 			defer close(valueStream)
 			for {
@@ -22,27 +25,35 @@ func BenchmarkGeneric(b *testing.B) {
 		}()
 		return valueStream
 	}
-	take := func(
-		done <-chan interface{},
-		valueStream <-chan interface{},
+	take := func[T any](
+		done <-chan struct{},
+		valueStream <-chan T,
 		num int,
-	) <-chan interface{} {
-		takeStream := make(chan interface{})
+	) <-chan T {
+		takeStream := make(chan T)
 		go func() {
 			defer close(takeStream)
 			for i := 0; i < num; i++ {
 				select {
 				case <-done:
 					return
-				case takeStream <- <-valueStream:
+				case v, ok := <-valueStream:
+					if !ok {
+						return
+					}
+					select {
+					case <-done:
+						return
+					case takeStream <- v:
+					}
 				}
 			}
 		}()
 		return takeStream
 	}
-	toString := func(
-		done <-chan interface{},
-		valueStream <-chan interface{},
+	toString := func[T fmt.Stringer](
+		done <-chan struct{},
+		valueStream <-chan T,
 	) <-chan string {
 		stringStream := make(chan string)
 		go func() {
@@ -51,23 +62,30 @@ func BenchmarkGeneric(b *testing.B) {
 				select {
 				case <-done:
 					return
-				case stringStream <- v.(string):
+				case stringStream <- v.String():
 				}
 			}
 		}()
 		return stringStream
 	}
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	b.ResetTimer()
-	for range toString(done, take(done, repeat(done, "a"), b.N)) {
+	for range toString(done, take(done, repeat(done, stringer("a")), b.N)) {
 	}
 }
 
+type stringer string
+
+func (s stringer) String() string { return string(s) }
+
 func BenchmarkTyped(b *testing.B) {
-	repeat := func(done <-chan interface{}, values ...string) <-chan string {
-		valueStream := make(chan string)
+	repeat := func[T any](
+		done <-chan struct{},
+		values ...T,
+	) <-chan T {
+		valueStream := make(chan T)
 		go func() {
 			defer close(valueStream)
 			for {
@@ -83,12 +101,12 @@ func BenchmarkTyped(b *testing.B) {
 		return valueStream
 	}
 
-	take := func(
-		done <-chan interface{},
-		valueStream <-chan string,
+	take := func[T any](
+		done <-chan struct{},
+		valueStream <-chan T,
 		num int,
-	) <-chan string {
-		takeStream := make(chan string)
+	) <-chan T {
+		takeStream := make(chan T)
 		go func() {
 			defer close(takeStream)
 			for i := num; i > 0 || i == -1; {
@@ -98,14 +116,22 @@ func BenchmarkTyped(b *testing.B) {
 				select {
 				case <-done:
 					return
-				case takeStream <- <-valueStream:
+				case v, ok := <-valueStream:
+					if !ok {
+						return
+					}
+					select {
+					case <-done:
+						return
+					case takeStream <- v:
+					}
 				}
 			}
 		}()
 		return takeStream
 	}
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	b.ResetTimer()

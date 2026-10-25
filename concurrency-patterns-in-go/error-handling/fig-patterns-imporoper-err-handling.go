@@ -7,7 +7,7 @@ import (
 
 func main() {
 	checkStatus := func(
-		done <-chan interface{},
+		done <-chan struct{},
 		urls ...string,
 	) <-chan *http.Response {
 		responses := make(chan *http.Response)
@@ -29,7 +29,7 @@ func main() {
 		return responses
 	}
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	urls := []string{"https://www.google.com", "https://badhost"}

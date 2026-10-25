@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	newRandStream := func(done <-chan interface{}) <-chan int {
+	newRandStream := func(done <-chan struct{}) <-chan int {
 		randStream := make(chan int)
 		go func() {
 			defer fmt.Println("newRandStream closure exited.")
@@ -24,7 +24,7 @@ func main() {
 		return randStream
 	}
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	randStream := newRandStream(done)
 	fmt.Println("3 random ints:")
 	for i := 1; i <= 3; i++ {

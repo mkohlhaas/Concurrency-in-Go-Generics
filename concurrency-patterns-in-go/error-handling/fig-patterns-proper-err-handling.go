@@ -10,7 +10,7 @@ func main() {
 		Error    error
 		Response *http.Response
 	}
-	checkStatus := func(done <-chan interface{}, urls ...string) <-chan Result { // <2>
+	checkStatus := func(done <-chan struct{}, urls ...string) <-chan Result { // <2>
 		results := make(chan Result)
 		go func() {
 			defer close(results)
@@ -29,7 +29,7 @@ func main() {
 		return results
 	}
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	urls := []string{"https://www.google.com", "https://badhost"}

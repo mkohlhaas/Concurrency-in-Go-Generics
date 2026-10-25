@@ -27,11 +27,11 @@ func tmpFileOrFatal() *os.File {
 }
 
 func performWrite(b *testing.B, writer io.Writer) {
-	repeat := func(
-		done <-chan interface{},
-		values ...interface{},
-	) <-chan interface{} {
-		valueStream := make(chan interface{})
+	repeat := func[T any](
+		done <-chan struct{},
+		values ...T,
+	) <-chan T {
+		valueStream := make(chan T)
 		go func() {
 			defer close(valueStream)
 			for {
@@ -46,30 +46,38 @@ func performWrite(b *testing.B, writer io.Writer) {
 		}()
 		return valueStream
 	}
-	take := func(
-		done <-chan interface{},
-		valueStream <-chan interface{},
+	take := func[T any](
+		done <-chan struct{},
+		valueStream <-chan T,
 		num int,
-	) <-chan interface{} {
-		takeStream := make(chan interface{})
+	) <-chan T {
+		takeStream := make(chan T)
 		go func() {
 			defer close(takeStream)
 			for i := 0; i < num; i++ {
 				select {
 				case <-done:
 					return
-				case takeStream <- <-valueStream:
+				case v, ok := <-valueStream:
+					if !ok {
+						return
+					}
+					select {
+					case <-done:
+						return
+					case takeStream <- v:
+					}
 				}
 			}
 		}()
 		return takeStream
 	}
 
-	done := make(chan interface{})
+	done := make(chan struct{})
 	defer close(done)
 
 	b.ResetTimer()
 	for bt := range take(done, repeat(done, byte(0)), b.N) {
-		writer.Write([]byte{bt.(byte)})
+		writer.Write([]byte{bt})
 	}
 }

@@ -1,10 +1,12 @@
 package main
 
-import ()
+import (
+	"fmt"
+)
 
 func main() {
-	doWork := func(strings <-chan string) <-chan interface{} {
-		completed := make(chan interface{})
+	doWork := func(strings <-chan string) <-chan struct{} {
+		completed := make(chan struct{})
 		go func() {
 			defer fmt.Println("doWork exited.")
 			defer close(completed)

@@ -4,45 +4,55 @@ import (
 	"fmt"
 )
 
-func main() {
-	repeat := func(
-		done <-chan interface{},
-		values ...interface{},
-	) <-chan interface{} {
-		valueStream := make(chan interface{})
-		go func() {
-			defer close(valueStream)
-			for {
-				for _, v := range values {
-					select {
-					case <-done:
-						return
-					case valueStream <- v:
-					}
-				}
-			}
-		}()
-		return valueStream
-	}
-	take := func(
-		done <-chan interface{},
-		valueStream <-chan interface{},
-		num int,
-	) <-chan interface{} {
-		takeStream := make(chan interface{})
-		go func() {
-			defer close(takeStream)
-			for i := 0; i < num; i++ {
+func repeat[T any](
+	done <-chan struct{},
+	values ...T,
+) <-chan T {
+	valueStream := make(chan T)
+	go func() {
+		defer close(valueStream)
+		for {
+			for _, v := range values {
 				select {
 				case <-done:
 					return
-				case takeStream <- <-valueStream:
+				case valueStream <- v:
 				}
 			}
-		}()
-		return takeStream
-	}
-	done := make(chan interface{})
+		}
+	}()
+	return valueStream
+}
+
+func take[T any](
+	done <-chan struct{},
+	valueStream <-chan T,
+	num int,
+) <-chan T {
+	takeStream := make(chan T)
+	go func() {
+		defer close(takeStream)
+		for i := 0; i < num; i++ {
+			select {
+			case <-done:
+				return
+			case v, ok := <-valueStream:
+				if !ok {
+					return
+				}
+				select {
+				case <-done:
+					return
+				case takeStream <- v:
+				}
+			}
+		}
+	}()
+	return takeStream
+}
+
+func main() {
+	done := make(chan struct{})
 	defer close(done)
 
 	for num := range take(done, repeat(done, 1), 10) {
